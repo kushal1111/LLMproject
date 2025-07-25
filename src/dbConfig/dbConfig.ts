@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-export const dbConfig = async () => {
+export const connect = async () => {
   try {
     const dbUrl = process.env.MONGO_HOST;
     if (!dbUrl) {
