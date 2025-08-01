@@ -58,19 +58,6 @@ export const authOptions: NextAuthOptions = {
         },
       },
     }),
-    FacebookProvider({
-      clientId: process.env.FACEBOOK_CLIENT_ID as string,
-      clientSecret: process.env.FACEBOOK_CLIENT_SECRET as string,
-    }),
-    Auth0Provider({
-      clientId: process.env.AUTH0_CLIENT_ID as string,
-      clientSecret: process.env.AUTH0_CLIENT_SECRET as string,
-      issuer: process.env.AUTH0_ISSUER as string,
-    }),
-    AppleProvider({
-      clientId: process.env.APPLE_ID as string,
-      clientSecret: process.env.APPLE_SECRET as string,
-    }),
     GitHubProvider({
       clientId: process.env.GITHUB_ID as string,
       clientSecret: process.env.GITHUB_SECRET as string,

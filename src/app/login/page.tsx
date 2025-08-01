@@ -128,33 +128,6 @@ export default function SignInPage() {
               Sign in with GitHub
             </button>
           </div>
-          <div>
-            <button
-              onClick={() => signIn("facebook", { callbackUrl })}
-              className="group relative w-full flex justify-center items-center py-2 px-4 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 gap-2"
-            >
-              <FaFacebook className="w-5 h-5 text-blue-600" />
-              Sign in with Facebook
-            </button>
-          </div>
-          <div>
-            <button
-              onClick={() => signIn("auth0", { callbackUrl })}
-              className="group relative w-full flex justify-center items-center py-2 px-4 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 gap-2"
-            >
-              <SiAuth0 className="w-5 h-5 text-orange-600" />
-              Sign in with Auth0
-            </button>
-          </div>
-          <div>
-            <button
-              onClick={() => signIn("apple", { callbackUrl })}
-              className="group relative w-full flex justify-center items-center py-2 px-4 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 gap-2"
-            >
-              <FaApple className="w-5 h-5 text-black" />
-              Sign in with Apple
-            </button>
-          </div>
         </div>
       </div>
     </div>
