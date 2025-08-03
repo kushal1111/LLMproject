@@ -7,6 +7,7 @@ export const connect = async () => {
     }
     await mongoose.connect(dbUrl);
     const connection = mongoose.connection;
+    connection.setMaxListeners(20); // Increase max listeners to avoid warning
     connection.on("error", (err) => {
       console.error("Database connection error:", err);
     });

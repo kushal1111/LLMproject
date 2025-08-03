@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '../auth/[...nextauth]/options';
 import OpenAI from 'openai';
+const MAX_ALLOWED_TOKENS = 4096;
 
 const openai = new OpenAI({
   baseURL: "https://openrouter.ai/api/v1",
@@ -33,10 +34,12 @@ export async function POST(request: NextRequest) {
       content: msg.content,
     }));
 
+    const safeMaxTokens = Math.min(maxTokens || 2000, MAX_ALLOWED_TOKENS);
+
     const completion = await openai.chat.completions.create({
       model: model || "deepseek/deepseek-r1:free",
       messages: formattedMessages,
-      max_tokens: maxTokens || 2000,
+      max_tokens: safeMaxTokens,
       temperature: 0.7,
     });
 
