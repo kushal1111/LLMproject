@@ -6,17 +6,25 @@ export async function middleware(request: NextRequest) {
   const token = await getToken({ req: request });
   const url = request.nextUrl;
 
-  if (
-    (token && url.pathname.startsWith("/sign-in"))
-  ) {
-    // If the user is authenticated and trying to access the sign-in page, redirect to the home page
-    return NextResponse.redirect(new URL("/", request.url));
+  // Allow OAuth callback URLs and error pages to pass through
+  if (url.pathname.startsWith("/api/auth") || url.pathname.includes("error=")) {
+    return NextResponse.next();
   }
 
-  // Allow the request to proceed if authenticated or on the login page
+  // If user is authenticated and trying to access login/signup pages, redirect to chat
+  if (token && (url.pathname === "/login" || url.pathname === "/signup" || url.pathname === "/sign-in")) {
+    return NextResponse.redirect(new URL("/chat", request.url));
+  }
+
+  // If user is not authenticated and trying to access protected routes, redirect to login
+  if (!token && url.pathname.startsWith("/chat")) {
+    return NextResponse.redirect(new URL("/login", request.url));
+  }
+
+  // Allow the request to proceed
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ["/sign-in", "/", "/login", "/signup"],
+  matcher: ["/login", "/signup", "/sign-in", "/chat", "/api/auth/:path*"],
 };

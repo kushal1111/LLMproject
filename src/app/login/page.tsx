@@ -1,42 +1,104 @@
 "use client";
 
-import { signIn } from "next-auth/react";
+import { signIn, useSession } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
 import { FcGoogle } from "react-icons/fc";
-import { FaGithub, FaFacebook, FaApple } from "react-icons/fa";
-import { SiAuth0 } from "react-icons/si";
-import React, { useState } from "react";
+import { FaGithub } from "react-icons/fa";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import axios from "axios";
 import toast, { Toaster } from "react-hot-toast";
 import { LoginSkeleton } from "@/app/SkeletonLoading";
 
 export default function SignInPage() {
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") || "/chat";
+  const error = searchParams.get("error");
   const [loading, setLoading] = useState(false);
   const [user, setUser] = useState({
-    username: "",
+    email: "",
     password: "",
   });
   const router = useRouter();
+  const { data: session, status } = useSession();
+
+  useEffect(() => {
+    if (session) {
+      router.push(callbackUrl);
+    }
+  }, [session, router, callbackUrl]);
+
+  useEffect(() => {
+    if (error) {
+      let errorMessage = "Authentication failed";
+      switch (error) {
+        case "OAuthCallback":
+          errorMessage = "OAuth authentication failed. Please check your provider settings.";
+          break;
+        case "Configuration":
+          errorMessage = "Authentication configuration error. Please contact support.";
+          break;
+        case "AccessDenied":
+          errorMessage = "Access denied. Please try again.";
+          break;
+        default:
+          errorMessage = `Authentication error: ${error}`;
+      }
+      toast.error(errorMessage);
+    }
+  }, [error]);
+
+  if (status === "loading") {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-xl">Loading...</div>
+      </div>
+    );
+  }
+
+  if (session) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-xl">Redirecting to chat...</div>
+      </div>
+    );
+  }
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    
     try {
-      const response = await axios.post("/api/users/login", user);
-      if (response.status === 200) {
-        // Assuming the response contains user data or a success message
+      const result = await signIn("credentials", {
+        email: user.email,
+        password: user.password,
+        redirect: false,
+      });
+
+      if (result?.error) {
+        toast.error(result.error);
+      } else if (result?.ok) {
         toast.success("Login successful!");
-        router.push("/chat");
+        router.push(callbackUrl);
+        router.refresh();
       }
-    } catch (error) {
-      toast.error("Login failed. Please check your credentials.");
+    } catch (error: unknown) {
+      toast.error("Login failed. Please try again.");
       console.error("Login failed:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleOAuthSignIn = async (provider: string) => {
+    try {
+      await signIn(provider, { 
+        callbackUrl,
+        redirect: true 
+      });
+    } catch (error) {
+      console.error(`${provider} sign in error:`, error);
+      toast.error(`${provider} sign in failed. Please try again.`);
     }
   };
 
@@ -57,19 +119,19 @@ export default function SignInPage() {
               <div className="flex flex-col gap-1">
                 <label
                   className="text-base font-semibold text-blue-800 bg-blue-100 px-2 py-1 rounded mb-1"
-                  htmlFor="username"
+                  htmlFor="email"
                 >
-                  Username
+                  Email
                 </label>
                 <input
                   className="p-3 border-2 border-blue-400 rounded-lg focus:outline-none focus:border-blue-600 transition bg-blue-50 text-black"
-                  type="text"
-                  id="username"
-                  name="username"
-                  placeholder="Enter your username"
-                  value={user.username}
+                  type="email"
+                  id="email"
+                  name="email"
+                  placeholder="Enter your email"
+                  value={user.email}
                   onChange={(e) =>
-                    setUser({ ...user, username: e.target.value })
+                    setUser({ ...user, email: e.target.value })
                   }
                   required
                 />
@@ -97,8 +159,9 @@ export default function SignInPage() {
               <button
                 type="submit"
                 className="mt-4 bg-blue-600 text-white font-semibold py-3 rounded-lg hover:bg-blue-700 transition"
+                disabled={loading}
               >
-                Login
+                {loading ? "Logging in..." : "Login"}
               </button>
             </form>
           )}
@@ -112,7 +175,7 @@ export default function SignInPage() {
         <div className="mt-8 space-y-6">
           <div>
             <button
-              onClick={() => signIn("google", { callbackUrl })}
+              onClick={() => handleOAuthSignIn("google")}
               className="group relative w-full flex justify-center items-center py-2 px-4 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 gap-2"
             >
               <FcGoogle className="w-5 h-5" />
@@ -121,7 +184,7 @@ export default function SignInPage() {
           </div>
           <div>
             <button
-              onClick={() => signIn("github", { callbackUrl })}
+              onClick={() => handleOAuthSignIn("github")}
               className="group relative w-full flex justify-center items-center py-2 px-4 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 gap-2"
             >
               <FaGithub className="w-5 h-5" />

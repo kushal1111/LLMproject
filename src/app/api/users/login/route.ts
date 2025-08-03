@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
         
         // Return success response with user data (excluding password)
         const { password: _, ...userData } = user.toObject();
-        const response = NextResponse.json({ message: "Login successful", user: userData }, { status: httpStatus.OK });
+        const response = NextResponse.json({ message: "Login successful", user: userData, success: true }, { status: httpStatus.OK });
         response.cookies.set("token", token, {
             httpOnly: true,
         })
