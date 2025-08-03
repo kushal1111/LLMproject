@@ -15,7 +15,14 @@ export async function POST(req: NextRequest) {
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return NextResponse.json(
-        { message: "User already exists" },
+        { message: "User Email already exists" },
+        { status: httpStatus.CONFLICT }
+      );
+    }
+    const existingUserName = await User.findOne({ username });
+    if (existingUserName) {
+      return NextResponse.json(
+        { message: "UserName already in use. Please Try another" },
         { status: httpStatus.CONFLICT }
       );
     }

@@ -9,10 +9,10 @@ connect()
 export async function POST(req: NextRequest) {
     try {
         const body = await req.json();
-        const { username, password } = body;
+        const { email, password } = body;
 
         // Find user by email
-        const user = await User.findOne({ username });
+        const user = await User.findOne({ email });
         if (!user) {
             return NextResponse.json({ message: "User not found" }, { status: httpStatus.NOT_FOUND });
         }

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { useSession } from 'next-auth/react';
+import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import toast, { Toaster } from 'react-hot-toast';
 
@@ -59,6 +59,173 @@ const availableModels: Model[] = [
     maxTokens: 200000
   }
 ];
+
+// Function to detect and format code blocks
+const formatMessageContent = (content: string) => {
+  // Split content into parts (text and code blocks)
+  const parts: Array<{ type: 'text' | 'code'; content: string; language?: string }> = [];
+  let currentIndex = 0;
+  
+  // Regex to match code blocks with language specification
+  const codeBlockRegex = /```(\w+)?\n([\s\S]*?)```/g;
+  let match;
+  
+  while ((match = codeBlockRegex.exec(content)) !== null) {
+    // Add text before code block
+    if (match.index > currentIndex) {
+      parts.push({
+        type: 'text',
+        content: content.slice(currentIndex, match.index)
+      });
+    }
+    
+    // Add code block
+    parts.push({
+      type: 'code',
+      language: match[1] || 'text',
+      content: match[2] || ''
+    });
+    
+    currentIndex = match.index + match[0].length;
+  }
+  
+  // Add remaining text
+  if (currentIndex < content.length) {
+    parts.push({
+      type: 'text',
+      content: content.slice(currentIndex)
+    });
+  }
+  
+  return parts.length > 0 ? parts : [{ type: 'text', content }];
+};
+
+// Copy to clipboard function
+const copyToClipboard = async (text: string) => {
+  try {
+    await navigator.clipboard.writeText(text);
+    toast.success('Copied to clipboard!');
+  } catch (err) {
+    console.error('Failed to copy:', err);
+    toast.error('Failed to copy to clipboard');
+  }
+};
+
+// Code block component
+const CodeBlock = ({ language, content }: { language: string; content: string }) => {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    await copyToClipboard(content);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <div className="relative my-4 rounded-lg bg-gray-900 overflow-hidden">
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 py-2 bg-gray-800">
+        <span className="text-sm text-gray-300 font-medium">
+          {language || 'text'}
+        </span>
+        <button
+          onClick={handleCopy}
+          className="flex items-center space-x-1 text-sm text-gray-300 hover:text-white transition"
+        >
+          {copied ? (
+            <>
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              <span>Copied!</span>
+            </>
+          ) : (
+            <>
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+              </svg>
+              <span>Copy</span>
+            </>
+          )}
+        </button>
+      </div>
+      
+      {/* Code content */}
+      <pre className="p-4 overflow-x-auto">
+        <code className="text-sm text-gray-100 font-mono">
+          {content}
+        </code>
+      </pre>
+    </div>
+  );
+};
+
+// Message component with copy functionality
+const MessageComponent = ({ message, index }: { message: Message; index: number }) => {
+  const [copied, setCopied] = useState(false);
+  const formattedContent = formatMessageContent(message.content);
+
+  const handleCopyMessage = async () => {
+    await copyToClipboard(message.content);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <div
+      className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+    >
+      <div
+        className={`relative max-w-3xl px-4 py-3 rounded-lg ${
+          message.role === 'user'
+            ? 'bg-blue-600 text-white'
+            : 'bg-white border border-gray-200 text-gray-900'
+        }`}
+      >
+        {/* Copy button */}
+        <button
+          onClick={handleCopyMessage}
+          className={`absolute top-2 right-2 p-1 rounded opacity-0 hover:opacity-100 transition-opacity ${
+            message.role === 'user' 
+              ? 'text-blue-100 hover:text-white' 
+              : 'text-gray-400 hover:text-gray-600'
+          }`}
+          title="Copy message"
+        >
+          {copied ? (
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+          ) : (
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+            </svg>
+          )}
+        </button>
+
+        {/* Message content */}
+        <div className="pr-8">
+          {formattedContent.map((part, partIndex) => (
+            <div key={partIndex}>
+              {part.type === 'text' ? (
+                <div className="whitespace-pre-wrap">{part.content}</div>
+              ) : part.type === 'code' ? (
+                <CodeBlock language={(part as any).language || 'text'} content={part.content} />
+              ) : null}
+            </div>
+          ))}
+        </div>
+
+        {/* Timestamp */}
+        <div className={`text-xs mt-2 ${
+          message.role === 'user' ? 'text-blue-100' : 'text-gray-500'
+        }`}>
+          {new Date(message.timestamp).toLocaleTimeString()}
+        </div>
+      </div>
+    </div>
+  );
+};
 
 export default function ChatPage() {
   const { data: session, status } = useSession();
@@ -240,6 +407,19 @@ export default function ChatPage() {
     }
   };
 
+  const handleLogout = async () => {
+    try {
+      await signOut({ 
+        callbackUrl: '/login',
+        redirect: true 
+      });
+      toast.success('Logged out successfully');
+    } catch (err) {
+      console.error('Logout error:', err);
+      toast.error('Failed to logout');
+    }
+  };
+
   if (status === 'loading') {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -305,8 +485,20 @@ export default function ChatPage() {
             >
               Clear Chat
             </button>
-            <div className="text-sm text-gray-500">
-              {session.user.email}
+            <div className="flex items-center space-x-3">
+              <div className="text-sm text-gray-500">
+                {session.user.email}
+              </div>
+              <button
+                onClick={handleLogout}
+                className="flex items-center space-x-2 px-4 py-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
+                title="Logout"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+                <span>Logout</span>
+              </button>
             </div>
           </div>
         </div>
@@ -318,29 +510,11 @@ export default function ChatPage() {
           <div className="text-center text-gray-500 mt-20">
             <div className="text-6xl mb-4">💬</div>
             <h2 className="text-2xl font-semibold mb-2">Start a conversation</h2>
-            <p>Ask me anything! I'm using {selectedModel.name} to help you.</p>
+            <p>Ask me anything! I&apos;m using {selectedModel.name} to help you.</p>
           </div>
         ) : (
           messages.map((message, index) => (
-            <div
-              key={index}
-              className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-            >
-              <div
-                className={`max-w-3xl px-4 py-3 rounded-lg ${
-                  message.role === 'user'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-white border border-gray-200 text-gray-900'
-                }`}
-              >
-                <div className="whitespace-pre-wrap">{message.content}</div>
-                <div className={`text-xs mt-2 ${
-                  message.role === 'user' ? 'text-blue-100' : 'text-gray-500'
-                }`}>
-                  {new Date(message.timestamp).toLocaleTimeString()}
-                </div>
-              </div>
-            </div>
+            <MessageComponent key={index} message={message} index={index} />
           ))
         )}
         

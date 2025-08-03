@@ -12,12 +12,12 @@ export async function middleware(request: NextRequest) {
   }
 
   // If user is authenticated and trying to access login/signup pages, redirect to chat
-  if (token && (url.pathname === "/login" || url.pathname === "/signup" || url.pathname === "/sign-in")) {
+  if (token && (url.pathname === "/login" || url.pathname === "/signup" || url.pathname === "/sign-in" || url.pathname === "/")) {
     return NextResponse.redirect(new URL("/chat", request.url));
   }
 
   // If user is not authenticated and trying to access protected routes, redirect to login
-  if (!token && url.pathname.startsWith("/chat")) {
+  if (!token && (url.pathname.startsWith("/chat") || url.pathname === "/")) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
