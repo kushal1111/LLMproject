@@ -4,13 +4,14 @@ import { signIn, useSession } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
 import { FcGoogle } from "react-icons/fc";
 import { FaGithub } from "react-icons/fa";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import toast, { Toaster } from "react-hot-toast";
 import { LoginSkeleton } from "@/app/SkeletonLoading";
 
-export default function SignInPage() {
+// Move all your logic into a new component
+function SignInPageContent() {
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") || "/chat";
   const error = searchParams.get("error");
@@ -33,10 +34,12 @@ export default function SignInPage() {
       let errorMessage = "Authentication failed";
       switch (error) {
         case "OAuthCallback":
-          errorMessage = "OAuth authentication failed. Please check your provider settings.";
+          errorMessage =
+            "OAuth authentication failed. Please check your provider settings.";
           break;
         case "Configuration":
-          errorMessage = "Authentication configuration error. Please contact support.";
+          errorMessage =
+            "Authentication configuration error. Please contact support.";
           break;
         case "AccessDenied":
           errorMessage = "Access denied. Please try again.";
@@ -67,7 +70,7 @@ export default function SignInPage() {
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    
+
     try {
       const result = await signIn("credentials", {
         email: user.email,
@@ -92,9 +95,9 @@ export default function SignInPage() {
 
   const handleOAuthSignIn = async (provider: string) => {
     try {
-      await signIn(provider, { 
+      await signIn(provider, {
         callbackUrl,
-        redirect: true 
+        redirect: true,
       });
     } catch (error) {
       console.error(`${provider} sign in error:`, error);
@@ -194,5 +197,14 @@ export default function SignInPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+// Export the Suspense-wrapped component as default
+export default function SignInPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
+      <SignInPageContent />
+    </Suspense>
   );
 }

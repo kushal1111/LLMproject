@@ -6,7 +6,7 @@ import { useSession } from 'next-auth/react';
 type Chat = {
   _id: string;
   title: string;
-  messages: any[];
+  messages: unknown[];
   model: string;
   createdAt: Date;
   updatedAt: Date;

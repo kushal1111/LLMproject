@@ -161,6 +161,7 @@ const CodeBlock = ({ language, content }: { language: string; content: string })
 };
 
 // Message component with copy functionality
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const MessageComponent = ({ message, index }: { message: Message; index: number }) => {
   const [copied, setCopied] = useState(false);
   const formattedContent = formatMessageContent(message.content);
@@ -210,7 +211,7 @@ const MessageComponent = ({ message, index }: { message: Message; index: number 
               {part.type === 'text' ? (
                 <div className="whitespace-pre-wrap">{part.content}</div>
               ) : part.type === 'code' ? (
-                <CodeBlock language={(part as any).language || 'text'} content={part.content} />
+                <CodeBlock language={'language' in part && part.language ? part.language : 'text'} content={part.content} />
               ) : null}
             </div>
           ))}
